@@ -3,8 +3,8 @@ import { useState, useRef } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import axios from 'axios';
 
-const GOOGLE_CLOUD_VISION_API_KEY = 'AIzaSyD3ebphLLTT1vyE_CGfCqZC_xr5MjJSGBk';
-const CHAT_GPT_API_KEY = 'sk-proj-EkhHFnDR8dscxpch7e3OT3BlbkFJAlmlNd37OoGA7V3AJIpE';
+const GOOGLE_CLOUD_VISION_API_KEY = '';
+const CHAT_GPT_API_KEY = '';
 
 export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();

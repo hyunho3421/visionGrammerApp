@@ -26,18 +26,9 @@ export default function NotGrantScreen({ navigation } : {navigation: any}) {
     }, [lastBackPressed])
   );
 
-
-  const setIsCheckingAppId = async () => {
-    SecureStore.deleteItemAsync("appId");
-    SecureStore.deleteItemAsync("grant");
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Waiting for Permission Request</Text>
-      <Button title="재요청"
-        onPress={setIsCheckingAppId}
-      />
     </View>
   );
 }

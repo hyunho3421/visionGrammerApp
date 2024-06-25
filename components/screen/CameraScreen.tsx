@@ -1,10 +1,12 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useState, useRef } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
+import { useCallback, useState, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { Button, StyleSheet, Text, TouchableOpacity, View, Image, ToastAndroid, BackHandler } from 'react-native';
 import { checkGrammerApi } from '../restApi/visionGrammarServer'
 import axios from 'axios';
 
 const GOOGLE_CLOUD_VISION_API_KEY = '';
+const DOUBLE_PRESS_DELAY = 2000;
 
 export default function CameraScreen({ navigation } : {navigation: any}) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -17,14 +19,33 @@ export default function CameraScreen({ navigation } : {navigation: any}) {
   const [isLoading, setIsLoading] = useState(false);
 
   var [correctNumber, setCorrectNumber] = useState('');
+
+  const [lastBackPressed, setLastBackPressed] = useState(0);
+
+  // 뒤로가기 막기
+  useFocusEffect(
+    useCallback(() => {
+      const handleBackPress = () => {
+        const now = Date.now();
+        if (now - lastBackPressed < DOUBLE_PRESS_DELAY) {
+          BackHandler.exitApp();
+        } else {
+          setLastBackPressed(now);
+          ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT);
+        }
+        return true;
+      };
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+      return () => backHandler.remove();
+    }, [lastBackPressed])
+  );
+
+
   if (!permission) {
-    // Camera permissions are still loading.
-    console.log("permission deny : " + permission)
     return <View />;
   }
 
   if (!permission.granted) {
-    // Camera permissions are not granted yet.
     return (
       <View style={styles.container}>
         <Text style={{ textAlign: 'center' }}>We need your permission to show the camera</Text>
@@ -38,23 +59,20 @@ export default function CameraScreen({ navigation } : {navigation: any}) {
     setIsLoading(true);
     
     if (cameraRef.current) {
-      const options = { quality: 0.5, base64: true };
-      let photo = await cameraRef.current.takePictureAsync({ quality: 0.5, base64: true });
+      const options = { quality: 1, base64: true };
+      let photo = await cameraRef.current.takePictureAsync({ quality: 0.8, base64: true });
 
+      setIsCamera(false);
       setPhoto(photo.uri);
       setIsImage(true);
 
       const detectedText = await analyzeImage(photo.base64);
-      console.log(detectedText); // 콘솔에 추출된 텍스트 출력
 
       const requestText = await getText(detectedText);
 
-      // var responseText = await checkGrammer(requestText);
       var responseText = await checkGrammerApi(requestText);
-      console.log("responseText is " + responseText);
       
       const extractedResponseText = /[1-5][번]/.exec(responseText);
-      console.log("temp is " + extractedResponseText);
 
       setCorrectNumber(responseText);
     
@@ -93,17 +111,17 @@ export default function CameraScreen({ navigation } : {navigation: any}) {
   const getText = async (extractedText:string) => {
     const mainTextArr = extractedText.split("\n");
     
-    for (var i = 0; i < mainTextArr.length; i++) {
-      console.log("mainTextArr [" + i + "]" + mainTextArr[i]);
-    }
+    // for (var i = 0; i < mainTextArr.length; i++) {
+    //   console.log("mainTextArr [" + i + "]" + mainTextArr[i]);
+    // }
     
     var pos = mainTextArr.indexOf("올바른 문장을 선택해 주세요");
     if (pos == -1) {
       // 사진 다시찍도록 유도 
-      console.log("문자 추출 실패");
+      // console.log("문자 추출 실패");
     }
 
-    console.log("[pos] " + pos);
+    // console.log("[pos] " + pos);
 
     var questionText = "";
     var cnt = 1;
@@ -111,40 +129,17 @@ export default function CameraScreen({ navigation } : {navigation: any}) {
     for (var i = pos+1; i < mainTextArr.length; i++) {
       // questionText += cnt + "번:\'" + mainTextArr[i] + "\'\n";
       if (mainTextArr[i].indexOf(".") != -1 && mainTextArr[i].indexOf("LV.") == -1 && cnt < 6) {
-        questionText += cnt + "번:\'" + mainTextArr[i] + "\'\n";
+
+        questionText += cnt + "번:\'" + mainTextArr[i].replaceAll("..", ".") + "\'\n";
         cnt = cnt + 1;
       }
     }
 
-    console.log("questionText is " + questionText);
+    // console.log("questionText is " + questionText);
     // let removeSpace = extractedText
 
     return questionText;
   }
-
-  // const checkGrammer = async (questionText:string) => {
-  //   const requestQuestionText = questionText + "1~5번중에 맞춤법, 뛰어쓰기, 문법이 맞는 말이 뭐야? 정답 번호와 문장만 알려줘. 설명은 하지마.";
-
-  //   try {
-  //     const result = await axios.post(
-  //       'https://api.openai.com/v1/chat/completions',
-  //       {
-  //         model: 'gpt-4-turbo',
-  //         messages: [{ role: 'system', content: '당신은 한국어 문법 전문가입니다.' },{ role: 'user', content: requestQuestionText }],
-  //       },
-  //       {
-  //         headers: {
-  //           Authorization: 'Bearer ' + CHAT_GPT_API_KEY,
-  //           'Content-Type': 'application/json',
-  //         },
-  //       }
-  //     );
-  //     console.log("result.data.choices[0].message.content is " + result.data.choices[0].message.content);
-  //     return result.data.choices[0].message.content;
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // }
 
   function activeCamera() {
     setIsCamera(true);
@@ -190,17 +185,32 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
+
   },
   buttonContainer: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'transparent',
+    // backgroundColor: 'transparent',
     margin: 64,
   },
   button: {
     flex: 1,
     alignSelf: 'flex-end',
+    // alignItems: 'center',
     alignItems: 'center',
+    bottom: '5%',
+    backgroundColor: '#3498db', // 버튼 배경색상 추가
+    // borderWidth: 4,
+    // borderBlockColor: '#3498db',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    // padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    // width: '70%',
+    // height: 50,
+    justifyContent: 'center',
+
   },
   text: {
     fontSize: 24,
@@ -220,15 +230,25 @@ const styles = StyleSheet.create({
     // backgroundColor: 'black'
   },
   modalText: {
-    fontSize: 24,
+    marginTop: 20,
+    fontSize: 20,
     textAlign: 'center',
-    backgroundColor: 'white',
-    height: '10%',
-    top: '5%'
+    // backgroundColor: 'white',
+    backgroundColor: '#3498db',
+    // height: '10%',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginBottom: 20,
+
+    color: '#fff', // 버튼 글자색상 추가
+    // fontWeight: 'bold',
+    // top: '5%'
     // flex:1,
   },
   preview: {
     flex: 1,
+    resizeMode: "contain",
   },
   loading: {
     width: '100%',
@@ -243,10 +263,7 @@ const styles = StyleSheet.create({
     top: '20%',
   },
   activeCameraButton: {
-    // alignSelf: 'flex-end',
     alignItems: 'center',
-    // left: '80%',
-    // height: '20%',
     bottom: '5%',
     backgroundColor: '#3498db', // 버튼 배경색상 추가
     paddingVertical: 15,

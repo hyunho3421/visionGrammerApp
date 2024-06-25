@@ -1,3 +1,10 @@
 {
-  "urlRandomness": "YHm8aSg"
+  "urlRandomness": "YHm8aSg",
+  "dev": true,
+  "minify": false,
+  "https": false,
+  "scheme": "exp+vision-grammer-app",
+  "hostType": "lan",
+  "lanType": "ip",
+  "devClient": false
 }

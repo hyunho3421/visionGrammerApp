@@ -37,9 +37,6 @@ export const checkGrammerApi = async (questionText:string) => {
 
     try {
         const appId = await SecureStore.getItemAsync("appId");
-        
-        console.log("appid : " + appId);
-        console.log("questionText : " + questionText);
 
         const response = await axios.post(
             'https://vision-427210.as.r.appspot.com/grammar/check',
@@ -53,9 +50,6 @@ export const checkGrammerApi = async (questionText:string) => {
                 },
             }
         );
-
-        console.log("[checkGrammer]" + response.data.result);
-        console.log("[checkGrammer]" + response.data.correct);
 
         if (response == null) {
             return "Connect server fail";
@@ -91,7 +85,6 @@ const getGrant = async (appId:string) => {
         );
 
         const result = response.data.result;
-        console.log("result is " + result);
 
         if (result == "PERMISION_GRANT") {
             await SecureStore.setItemAsync("grant", "PERMISSION");
@@ -111,7 +104,6 @@ const getGrant = async (appId:string) => {
 export const checkingAppId = async () => {
     const appId = await SecureStore.getItemAsync("appId");
     const grant = await SecureStore.getItemAsync("grant");
-    console.log("appId is " + appId + " grant is " + grant);
 
     if (appId == null || appId == "") {
         // 인증아이디 없을떄 - 서버 등록 요청

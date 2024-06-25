@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { View, Text, Button, StyleSheet, TextInput, Alert  } from 'react-native';
 import { getFirstCertify } from '../restApi/visionGrammarServer';
-import * as SplashScreen from 'expo-splash-screen';
-import * as Font from 'expo-font';
-
-// SplashScreen.preventAutoHideAsync().catch(() => { /* iphone 용 */ });
 
 export default function NotExistAppId({ navigation } : {navigation: any}) {
   const [text, setText] = useState('');
@@ -20,9 +16,13 @@ export default function NotExistAppId({ navigation } : {navigation: any}) {
       return;
     }
 
+    if (text.length > 20) {
+      Alert.alert("name max length 20");
+      return;
+    }
+
     try {
       setSending(true);
-      SplashScreen.preventAutoHideAsync().catch(() => { /* iphone 용 */ });
       await getFirstCertify(text);
       navigation.navigate('notGrant');
       
@@ -30,7 +30,6 @@ export default function NotExistAppId({ navigation } : {navigation: any}) {
       console.log(error);
     } finally {
       setSending(false);
-      SplashScreen.hideAsync(); 
     }
   };
 

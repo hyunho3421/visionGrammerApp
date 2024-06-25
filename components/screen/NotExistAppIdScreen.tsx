@@ -1,19 +1,42 @@
 import { useState } from 'react';
-import { View, Text, Button, StyleSheet, TextInput } from 'react-native';
-import { checkingAppId, requestAccount } from '../restApi/visionGrammarServer';
+import { View, Text, Button, StyleSheet, TextInput, Alert  } from 'react-native';
+import { getFirstCertify } from '../restApi/visionGrammarServer';
+import * as SplashScreen from 'expo-splash-screen';
+import * as Font from 'expo-font';
+
+// SplashScreen.preventAutoHideAsync().catch(() => { /* iphone 용 */ });
 
 export default function NotExistAppId({ navigation } : {navigation: any}) {
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
 
   const setIsCheckingAppId = async () => {
-    await requestAccount(text);
+    if (text == '') {
+      Alert.alert("write name please");
+      return;
+    }
 
-    navigation.navigate('notGrant');
+    if (sending == true) {
+      return;
+    }
+
+    try {
+      setSending(true);
+      SplashScreen.preventAutoHideAsync().catch(() => { /* iphone 용 */ });
+      await getFirstCertify(text);
+      navigation.navigate('notGrant');
+      
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setSending(false);
+      SplashScreen.hideAsync(); 
+    }
   };
 
-    return (
+  return (
       <View style={styles.container}>
-        <Text style={styles.title}>Please write in English</Text>
+        <Text style={styles.title}>Please write name in english</Text>
         <TextInput style={styles.input} value={text} onChangeText={(newText) => setText(newText)} placeholder='phone name'/>
         <Button title="request" onPress={setIsCheckingAppId}/>
       </View>
